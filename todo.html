@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        * {
+            padding:0;
+            margin:0;
+            list-style: none;
+            text-decoration: none;
+        }
+        .app-title {
+            text-align:center;
+            font: 2em/4em "Arial";
+        }
+        a.button {
+            color:#fff;
+            display: inline;
+            padding:8px;
+            border-radius: 3px;
+            margin:0 4px;
+        }
+        a.button.complate {
+            background: green;
+        }
+        a.button.delete {
+            background: red;
+        }
+        a.button.uncomplate {
+            background: blue
+        }
+        li.del .todo-body {
+            opacity: .5;
+            text-shadow: 2px 2px #cccc;
+            text-decoration: line-through
+        }
+        body{
+            background: #eee;
+        }
+        div#todo {
+            width:90%;
+            margin: auto;
+            
+        }
+        div.todo-content {
+            display: flex;
+            justify-content: space-between;
+        }
+        #todo-input {
+            width:90%;
+            padding:2% 5%;
+        }
+        #todo-input input{
+            width:96%;
+            padding:2%;
+            border: none;
+            background: #fff;
+            border-radius: 5px;
+            outline: none;
+            font: 1.4em "Arial";
+            letter-spacing: 2px;
+            color:#333;
+            border-bottom: 6px solid #eee;
+            transition:border-bottom .2s linear;
+        }
+        #todo-input input:focus {
+            border-bottom: 6px solid rgba(0, 0, 0, .1);
+        }
+
+
+        #todo-list li{
+            padding:20px 20px;
+            font: 1em "Arial";
+            background: #fff;
+            border-radius: 5px;
+            margin:10px 0;
+        }
+        
+
+        canvas, #container{
+            top:0;left:0;
+        }
+        #container {
+            position: absolute;
+            width:100%;
+            z-index: 2;
+        }
+        canvas {
+            position: fixed;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="container">
+        <h1 class="app-title">TODO APP</h1>
+        <div ng-app="todo" id="todo">
+            <div ng-controller="todo-input" id="todo-input">
+                <form ng-submit="submit()">
+                    <input type="text" ng-model="todo">
+                </form>
+            </div>
+            <div ng-controller="todo-list" id="todo-list">
+                <ul>
+                    <li ng-repeat="(k, v) in todos track by $index" ng-class="{'del': v.complate}">
+                        <div class="todo-content">
+                            <div class="todo-body">
+                                {{v.todo}} 
+                            </div>
+                            <div>
+                                <span>{{getDate(v.dateTime)}}</span>
+                                <a href="#" ng-click="delete(k)" class="button delete">DELETE</a>
+                                <a href="#" ng-hide="v.complate" ng-click="complate(k)" class="button complate">COMPLATE</a>
+                                <a href="#" ng-show="v.complate" ng-click="uncomplate(k)" class="button uncomplate">UNCOMPLATE</a>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script src="http://cdn.static.runoob.com/libs/angular.js/1.4.6/angular.min.js"></script>
+    <script type="text/javascript">
+        let app = angular.module("todo", []);
+        app.controller('todo-input', function($scope, $rootScope) {
+            $rootScope.todos = localStorage.getItem('ng-todos');
+            if($rootScope.todos) {
+                $rootScope.todos = JSON.parse($rootScope.todos);
+            }else {
+                $rootScope.todos = [];
+            }
+
+            $rootScope.SaveTodo = function() {
+                let date = new Date();
+                $rootScope.todos.unshift({
+                    todo: $scope.todo,
+                    dateTime: new Date(),
+                    complate: false
+                });
+
+                $rootScope.save_data();
+            }
+
+            $rootScope.save_data = function() {
+                localStorage.setItem('ng-todos', JSON.stringify($rootScope.todos));
+            }
+
+
+            $scope.todo = '';
+            $scope.submit = function(e) {
+                let todo = $scope.todo;
+                if(!/.+/.test(todo)) return false;
+                $rootScope.SaveTodo();
+                $scope.todo = '';
+            }
+
+            
+        })
+        app.controller('todo-list', function($scope, $rootScope, $http) {
+            $http.get('http://192.168.117.19:7001', function(r) {
+                console.log(r);
+            });
+
+            $scope.getDate = function(date) {
+                if(typeof(date) == 'string') date = new Date(date);
+                return `${date.getFullYear()}/${date.getMonth()}/${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+            }
+            $scope.delete = function(key) {
+                $rootScope.todos.splice(key, 1);
+                $rootScope.save_data();
+            }
+            $scope.complate = function(key) {
+                $rootScope.todos[key].complate = true;
+                $rootScope.save_data();
+            }
+            $scope.uncomplate = function(key) {
+                $rootScope.todos[key].complate = false;
+                $rootScope.save_data();
+            }
+        })
+
+
+
+        {
+            let canvas = document.querySelector('#canvas')
+            , ctx = canvas.getContext('2d')
+            , width = document.documentElement.clientWidth
+            , height = document.documentElement.clientHeight
+            
+            canvas.width = width;
+            canvas.height = height;
+
+            let datas = Array.from({length: 30}, function() {
+                let r = Math.random() * 2 + 0.3;
+                return {
+                    r: Math.PI * 5 + 2,
+                    x: Math.random() * (width - r),
+                    y: Math.random() * (height - r),
+                    xs: Math.random() > 0.5 ? -Math.random() * 1 + 0.1 : Math.random() * 1 + 0.1,
+                    ys: Math.random() > 0.5 ? -Math.random() * 1 + 0.1 : Math.random() * 1 + 0.1
+                }
+            })
+                
+            let token = setInterval(function() {
+                ctx.clearRect(0, 0, width, height);
+                datas.forEach(item=> {
+                    item.x += item.xs;
+                    item.y += item.ys;
+
+                    if(item.x > width - item.r || item.x < 0) item.xs = -item.xs;
+                    if(item.y > height - item.r || item.y < 0) item.ys = -item.ys;
+                    ctx.beginPath();
+                    ctx.fillStyle="#ccc"
+                    ctx.arc(item.x, item.y, item.r, 0, Math.PI*2);
+                    ctx.fill();
+
+
+                    datas.forEach(itemm=> {
+                        if(Math.abs(item.x - itemm.x) < 100 && Math.abs(item.y - itemm.y) < 100) {
+                            let num = Math.min(Math.abs(item.x - itemm.x), Math.abs(item.y - itemm.y));
+                            ctx.beginPath()
+                            ctx.moveTo(item.x, item.y)
+                            ctx.lineTo(itemm.x, itemm.y);
+                            ctx.lineWidth="10px"
+                            ctx.strokeStyle="rgba(200, 200, 200, "+num/100+")"
+                            ctx.stroke();
+                        }
+                    })
+                })
+            }, 10)
+        }
+    </script>
+</body>
+</html>
